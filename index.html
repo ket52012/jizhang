@@ -35,6 +35,12 @@
             word-wrap: break-word;
             white-space: pre-wrap;
         }
+        .sidebar .usage {
+            font-style: normal;
+            font-size: 0.9em;
+            margin-top: 10px;
+            color: #333;
+        }
         .container {
             flex: 1;
             background: rgba(255, 255, 255, 0.7);
@@ -222,9 +228,7 @@
     <div class="sidebar">
         <h3>生活格言与目标</h3>
         <p id="motto">加载中...</p>
-        <p style="font-size: 0.9em; margin-top: 10px;">
-            项目用途：这是一个基于浏览器本地缓存的生活开支记账工具，默认密码为123。所有数据保存在本地浏览器缓存中，清除浏览器数据会导致数据丢失，请定期导出备份。
-        </p>
+        <p class="usage">项目用途：这是一个基于浏览器本地缓存的生活开支记账工具，默认密码为123。所有数据保存在本地浏览器缓存中，清除浏览器数据会导致数据丢失，请定期导出备份。</p>
     </div>
     <div class="container">
         <h2>生活开支记账</h2>
@@ -269,8 +273,6 @@
             <button class="delete-btn" onclick="promptPassword('clearMonthly')">清除月账单</button>
         </div>
     </div>
-
-    <!-- 修改记录模态框 -->
     <div id="editModal" class="modal">
         <div class="modal-form">
             <h3>修改记录</h3>
@@ -282,8 +284,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 密码输入模态框 -->
     <div id="passwordModal" class="modal">
         <div class="password-modal">
             <h3>请输入密码</h3>
@@ -294,8 +294,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 编辑格言模态框 -->
     <div id="mottoModal" class="modal">
         <div class="modal-form">
             <h3>编辑格言与目标</h3>
@@ -306,8 +304,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 月账单修改模态框 -->
     <div id="editMonthlyModal" class="modal">
         <div class="modal-form">
             <h3>修改月账单</h3>
@@ -320,8 +316,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 明细模态框 -->
     <div id="detailModal" class="modal">
         <div class="modal-form">
             <h3>月账单明细</h3>
@@ -331,10 +325,7 @@
             </div>
         </div>
     </div>
-
-    <!-- 加载提示 -->
     <div id="loading">正在生成账单中，请稍等...</div>
-
     <script>
         let records = JSON.parse(localStorage.getItem('records')) || [];
         let monthlyRecords = JSON.parse(localStorage.getItem('monthlyRecords')) || [];
@@ -346,7 +337,6 @@
         let selectedCurrency = 'CNY';
         let usdtRate = 6.7;
         let tempMotto = '';
-
         async function getUSDTRate() {
             try {
                 const response = await fetch('https://api.exchangerate-api.com/v4/latest/CNY');
@@ -358,65 +348,58 @@
                 document.getElementById('usdtBtn').textContent = `USDT (${usdtRate.toFixed(2)})`;
             }
         }
-
         function setCurrency(currency) {
             selectedCurrency = currency;
             document.querySelectorAll('.currency-cny-btn, .currency-usdt-btn').forEach(btn => {
                 btn.style.opacity = btn.className.includes(currency.toLowerCase()) ? '1' : '0.6';
             });
         }
-
         async function addRecord(isIncome) {
             try {
-                const note = document.getElementById('note').value;
+                const note = document.getElementById('note').value || '无备注';
                 const amount = parseFloat(document.getElementById('amount').value);
                 if (!amount) {
                     alert('请输入金额');
                     return;
                 }
-
                 let cnyAmount = amount;
                 if (selectedCurrency === 'USDT') {
                     cnyAmount = amount * usdtRate;
                 }
-
                 const time = new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 const record = { time, note, amount: cnyAmount, isIncome, id: Date.now() };
                 records.push(record);
                 saveRecords();
                 updateTables();
-
                 document.getElementById('note').value = '';
                 document.getElementById('amount').value = '';
             } catch (error) {
                 console.error('Error in addRecord:', error);
             }
         }
-
         function saveRecords() {
             localStorage.setItem('records', JSON.stringify(records));
         }
-
         function saveMonthlyRecords() {
             localStorage.setItem('monthlyRecords', JSON.stringify(monthlyRecords));
         }
-
         function editRecord(id) {
             try {
                 const record = records.find(r => r.id === id);
+                if (!record) return;
                 editId = id;
-                document.getElementById('editNote').value = record.note;
-                document.getElementById('editAmount').value = record.amount;
+                document.getElementById('editNote').value = record.note || '无备注';
+                document.getElementById('editAmount').value = record.amount || 0;
                 document.getElementById('editModal').style.display = 'block';
             } catch (error) {
                 console.error('Error in editRecord:', error);
             }
         }
-
         function saveEdit() {
             try {
                 const record = records.find(r => r.id === editId);
-                const newNote = document.getElementById('editNote').value;
+                if (!record) return;
+                const newNote = document.getElementById('editNote').value || '无备注';
                 const newAmount = parseFloat(document.getElementById('editAmount').value);
                 if (newNote !== null) record.note = newNote;
                 if (!isNaN(newAmount)) record.amount = newAmount;
@@ -428,12 +411,10 @@
                 console.error('Error in saveEdit:', error);
             }
         }
-
         function deleteRecord(id) {
             editId = id;
             promptPassword('deleteRecord');
         }
-
         function executeDelete() {
             try {
                 records = records.filter(r => r.id !== editId);
@@ -444,7 +425,6 @@
                 console.error('Error in executeDelete:', error);
             }
         }
-
         function editMonthly(month) {
             try {
                 const record = monthlyRecords.find(r => r.month === month);
@@ -461,7 +441,6 @@
                 console.error('Error in editMonthly:', error);
             }
         }
-
         function saveMonthlyEdit() {
             try {
                 const record = monthlyRecords.find(r => r.month === editMonth);
@@ -478,12 +457,10 @@
                 console.error('Error in saveMonthlyEdit:', error);
             }
         }
-
         function deleteMonthly(month) {
             editMonth = month;
             promptPassword('deleteMonthly');
         }
-
         function executeDeleteMonthly() {
             try {
                 monthlyRecords = monthlyRecords.filter(r => r.month !== editMonth);
@@ -494,7 +471,6 @@
                 console.error('Error in executeDeleteMonthly:', error);
             }
         }
-
         function editMotto() {
             try {
                 document.getElementById('mottoText').value = motto;
@@ -504,10 +480,9 @@
                 console.error('Error in editMotto:', error);
             }
         }
-
         function saveMotto() {
             try {
-                motto = tempMotto;
+                motto = document.getElementById('mottoText').value || '活在当下，追求梦想';
                 localStorage.setItem('motto', motto);
                 updateMottoDisplay();
                 closeModal('mottoModal');
@@ -516,7 +491,6 @@
                 console.error('Error in saveMotto:', error);
             }
         }
-
         function updateMottoDisplay() {
             try {
                 const mottoElement = document.getElementById('motto');
@@ -527,7 +501,6 @@
                 console.error('Error in updateMottoDisplay:', error);
             }
         }
-
         function promptPassword(action) {
             try {
                 if (action === 'saveMotto') {
@@ -540,7 +513,6 @@
                 console.error('Error in promptPassword:', error);
             }
         }
-
         function confirmPassword() {
             try {
                 const password = document.getElementById('passwordInput').value;
@@ -568,7 +540,6 @@
                 console.error('Error in confirmPassword:', error);
             }
         }
-
         function closeModal(modalId) {
             try {
                 document.getElementById(modalId).style.display = 'none';
@@ -580,39 +551,33 @@
                 console.error('Error in closeModal:', error);
             }
         }
-
         function updateTables() {
             try {
                 const incomeTable = document.getElementById('incomeTable');
                 const expenseTable = document.getElementById('expenseTable');
-                
                 while (incomeTable.rows.length > 1) incomeTable.deleteRow(1);
                 while (expenseTable.rows.length > 1) expenseTable.deleteRow(1);
-
                 let totalIncome = 0;
                 let totalExpense = 0;
-
                 records.forEach(record => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${record.time}</td>
-                        <td>${record.note}</td>
-                        <td>¥${record.amount.toFixed(2)}</td>
+                        <td>${record.note || '无备注'}</td>
+                        <td>¥${(record.amount || 0).toFixed(2)}</td>
                         <td>
                             <button class="edit-btn" onclick="editRecord(${record.id})">修改</button>
                             <button class="delete-btn" onclick="deleteRecord(${record.id})">删除</button>
                         </td>
                     `;
-                    
                     if (record.isIncome) {
                         incomeTable.appendChild(row);
-                        totalIncome += record.amount;
+                        totalIncome += record.amount || 0;
                     } else {
                         expenseTable.appendChild(row);
-                        totalExpense += record.amount;
+                        totalExpense += record.amount || 0;
                     }
                 });
-
                 document.getElementById('summary').innerHTML = `
                     <h3>本月总结</h3>
                     <p>总收入: ¥${totalIncome.toFixed(2)}</p>
@@ -623,12 +588,10 @@
                 console.error('Error in updateTables:', error);
             }
         }
-
         function updateMonthlyTable() {
             try {
                 const monthlyTable = document.getElementById('monthlyTable');
                 while (monthlyTable.rows.length > 1) monthlyTable.deleteRow(1);
-
                 monthlyRecords.forEach(record => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -650,40 +613,34 @@
                 console.error('Error in updateMonthlyTable:', error);
             }
         }
-
         function clearLastMonthRecords() {
             try {
                 if (records.length === 0) {
                     alert('没有记录可清除');
                     return;
                 }
-
                 const months = [...new Set(records.map(r => r.time.slice(0, 7).replace('/', '-')))];
                 if (months.length === 0) {
                     alert('没有记录可清除');
                     return;
                 }
-
                 months.sort((a, b) => new Date(b) - new Date(a));
                 if (months.length < 2) {
                     alert('记录中只有一个月份，无法清除上个月');
                     return;
                 }
-
                 const lastMonthStr = months[1];
                 const lastMonthRecords = records.filter(r => r.time.slice(0, 7).replace('/', '-') === lastMonthStr);
                 if (lastMonthRecords.length === 0) {
                     alert(`没有 ${lastMonthStr} 的记录可清除`);
                     return;
                 }
-
                 let totalIncome = 0;
                 let totalExpense = 0;
                 lastMonthRecords.forEach(record => {
-                    if (record.isIncome) totalIncome += record.amount;
-                    else totalExpense += record.amount;
+                    if (record.isIncome) totalIncome += record.amount || 0;
+                    else totalExpense += record.amount || 0;
                 });
-
                 const existingMonth = monthlyRecords.find(r => r.month === lastMonthStr);
                 if (existingMonth) {
                     existingMonth.income = totalIncome;
@@ -692,7 +649,6 @@
                 } else {
                     monthlyRecords.push({ month: lastMonthStr, income: totalIncome, expense: totalExpense, details: lastMonthRecords });
                 }
-
                 records = records.filter(r => r.time.slice(0, 7).replace('/', '-') !== lastMonthStr);
                 saveRecords();
                 saveMonthlyRecords();
@@ -703,13 +659,11 @@
                 console.error('Error in clearLastMonthRecords:', error);
             }
         }
-
         function showMonthlyDetails(month) {
             try {
                 const record = monthlyRecords.find(r => r.month === month);
                 const detailDiv = document.getElementById('detailRecords');
                 detailDiv.innerHTML = '';
-
                 if (record && record.details && record.details.length > 0) {
                     const incomeTable = document.createElement('table');
                     incomeTable.className = 'income-table';
@@ -717,11 +671,10 @@
                     const expenseTable = document.createElement('table');
                     expenseTable.className = 'expense-table';
                     expenseTable.innerHTML = '<tr><th>时间</th><th>备注</th><th>人民币</th></tr>';
-
                     record.details.forEach(detail => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${detail.time}</td>
+                            <td>${detail.time || '-'}</td>
                             <td>${detail.note || '无备注'}</td>
                             <td>¥${(detail.amount || 0).toFixed(2)}</td>
                         `;
@@ -731,7 +684,6 @@
                             expenseTable.appendChild(row);
                         }
                     });
-
                     detailDiv.appendChild(document.createElement('h4')).textContent = '收入记录';
                     detailDiv.appendChild(incomeTable);
                     detailDiv.appendChild(document.createElement('h4')).textContent = '支出记录';
@@ -739,13 +691,11 @@
                 } else {
                     detailDiv.innerHTML = '<p>无明细记录</p>';
                 }
-
                 document.getElementById('detailModal').style.display = 'block';
             } catch (error) {
                 console.error('Error in showMonthlyDetails:', error);
             }
         }
-
         function clearMonthlyRecords() {
             try {
                 monthlyRecords = [];
@@ -757,15 +707,12 @@
                 console.error('Error in clearMonthlyRecords:', error);
             }
         }
-
         function generateBill() {
             try {
                 document.getElementById('loading').style.display = 'block';
-                
                 const now = new Date();
                 const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
                 const filteredRecords = records.filter(r => r.time.slice(0, 7).replace('/', '-') === currentMonth);
-
                 const windowWidth = window.innerWidth * 0.9;
                 const baseFontSize = Math.max(12, Math.min(24, windowWidth / 50));
                 const headerFontSize = baseFontSize * 1.5;
@@ -773,22 +720,18 @@
                 const headerHeight = rowHeight * 2;
                 const canvasWidth = windowWidth;
                 const canvasHeight = headerHeight + (filteredRecords.length + 5) * rowHeight;
-
                 const canvas = document.createElement('canvas');
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
                 const ctx = canvas.getContext('2d');
-
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
                 ctx.fillStyle = '#333';
                 ctx.font = `bold ${headerFontSize}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.fillText('生活开支记账', canvasWidth / 2, headerHeight / 3);
                 ctx.font = `${baseFontSize}px Arial`;
                 ctx.fillText(`生成日期: ${now.toLocaleDateString('zh-CN')}`, canvasWidth / 2, headerHeight * 2 / 3);
-
                 const incomeHeaderY = headerHeight;
                 ctx.fillStyle = '#e6f0e6';
                 ctx.fillRect(0, incomeHeaderY, canvasWidth, rowHeight);
@@ -799,7 +742,6 @@
                     const x = i * (canvasWidth / 3);
                     ctx.fillText(header, x + (canvasWidth / 6), incomeHeaderY + rowHeight / 2);
                 });
-
                 let y = incomeHeaderY + rowHeight;
                 const incomeRecords = filteredRecords.filter(r => r.isIncome);
                 incomeRecords.forEach(record => {
@@ -807,14 +749,13 @@
                     ctx.fillRect(0, y, canvasWidth, rowHeight);
                     ctx.fillStyle = '#000';
                     ctx.font = `${baseFontSize}px Arial`;
-                    const cols = [record.time, record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
+                    const cols = [record.time || '-', record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
                     cols.forEach((col, i) => {
                         const x = i * (canvasWidth / 3);
                         ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
                     });
                     y += rowHeight;
                 });
-
                 const expenseHeaderY = y;
                 ctx.fillStyle = '#f0e6e6';
                 ctx.fillRect(0, expenseHeaderY, canvasWidth, rowHeight);
@@ -825,7 +766,6 @@
                     const x = i * (canvasWidth / 3);
                     ctx.fillText(header, x + (canvasWidth / 6), expenseHeaderY + rowHeight / 2);
                 });
-
                 y = expenseHeaderY + rowHeight;
                 const expenseRecords = filteredRecords.filter(r => !r.isIncome);
                 expenseRecords.forEach(record => {
@@ -833,14 +773,13 @@
                     ctx.fillRect(0, y, canvasWidth, rowHeight);
                     ctx.fillStyle = '#000';
                     ctx.font = `${baseFontSize}px Arial`;
-                    const cols = [record.time, record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
+                    const cols = [record.time || '-', record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
                     cols.forEach((col, i) => {
                         const x = i * (canvasWidth / 3);
                         ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
                     });
                     y += rowHeight;
                 });
-
                 const summaryY = y;
                 ctx.fillStyle = '#f9f9f9';
                 ctx.fillRect(0, summaryY, canvasWidth, rowHeight * 3);
@@ -863,11 +802,9 @@
                         ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight * (i + 1) - rowHeight / 2);
                     }
                 });
-
                 const newWindow = window.open('', '_blank');
                 newWindow.document.write('<img src="' + canvas.toDataURL('image/png') + '" style="max-width: 100%; height: auto;">');
                 newWindow.document.close();
-
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
                 }, 100);
@@ -876,7 +813,6 @@
                 document.getElementById('loading').style.display = 'none';
             }
         }
-
         function exportToDesktop() {
             try {
                 const data = { records, monthlyRecords };
@@ -895,13 +831,11 @@
                 console.error('Error in exportToDesktop:', error);
             }
         }
-
         function importRecords() {
             try {
                 const fileInput = document.getElementById('importFile');
                 const file = fileInput.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
@@ -923,7 +857,6 @@
                 console.error('Error in importRecords:', error);
             }
         }
-
         document.getElementById('amount').addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 's') {
                 addRecord(false);
@@ -932,26 +865,21 @@
                 addRecord(true);
             }
         });
-
         document.getElementById('editAmount').addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 's') {
                 promptPassword('saveEdit');
             }
         });
-
         document.getElementById('passwordInput').addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 'c') {
                 confirmPassword();
             }
         });
-
         document.getElementById('mottoText').addEventListener('keydown', (e) => {
             if (e.altKey && e.key === 's') {
                 promptPassword('saveMotto');
             }
         });
-
-        // 初始化
         getUSDTRate();
         setCurrency('CNY');
         updateTables();
