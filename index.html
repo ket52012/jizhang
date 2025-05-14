@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>生活开支记账</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -75,7 +74,6 @@
         button.edit-btn { background: #2196F3; color: white; }
         button.delete-btn { background: #F44336; color: white; }
         button.bill-zh-btn { background: #3F51B5; color: white; }
-        button.bill-th-btn { background: #9C27B0; color: white; }
         button.currency-cny-btn { background: #FF9800; color: white; }
         button.currency-usdt-btn { background: #26A69A; color: white; }
         button.export-btn { background: #2196F3; color: white; }
@@ -111,18 +109,18 @@
             height: 100%;
             background-color: rgba(0,0,0,0.8);
             z-index: 1000;
-            overflow: auto; /* 允许模态框内容滚动 */
+            overflow: auto;
         }
         .modal-form {
-            margin: 5% auto; /* 调整为更小的顶部间距 */
+            margin: 5% auto;
             padding: 20px;
             background: rgba(255, 255, 255, 0.95);
-            width: 600px; /* 固定宽度 */
+            width: 600px;
             border-radius: 10px;
             text-align: center;
             position: relative;
             z-index: 1001;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 添加阴影 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
         .modal-form h3 {
             color: #333;
@@ -224,6 +222,9 @@
     <div class="sidebar">
         <h3>生活格言与目标</h3>
         <p id="motto">加载中...</p>
+        <p style="font-size: 0.9em; margin-top: 10px;">
+            项目用途：这是一个基于浏览器本地缓存的生活开支记账工具，默认密码为123。所有数据保存在本地浏览器缓存中，清除浏览器数据会导致数据丢失，请定期导出备份。
+        </p>
     </div>
     <div class="container">
         <h2>生活开支记账</h2>
@@ -237,8 +238,7 @@
                 <button class="expense-btn" onclick="addRecord(false)">添加支出</button>
             </div>
             <div class="button-group">
-                <button class="bill-zh-btn" onclick="generateBill('zh')">生成中文账单</button>
-                <button class="bill-th-btn" onclick="generateBill('th')">生成泰语账单</button>
+                <button class="bill-zh-btn" onclick="generateBill()">生成账单</button>
                 <button class="export-btn" onclick="exportToDesktop()">导出记录</button>
                 <input type="file" id="importFile" accept=".json" onchange="importRecords()" style="display: none;">
                 <button class="import-btn" onclick="document.getElementById('importFile').click()">导入记录</button>
@@ -347,10 +347,6 @@
         let usdtRate = 6.7;
         let tempMotto = '';
 
-        console.log('Initial records:', records);
-        console.log('Initial monthlyRecords:', monthlyRecords);
-        console.log('Initial motto:', motto);
-
         async function getUSDTRate() {
             try {
                 const response = await fetch('https://api.exchangerate-api.com/v4/latest/CNY');
@@ -364,7 +360,6 @@
         }
 
         function setCurrency(currency) {
-            console.log('Setting currency to:', currency);
             selectedCurrency = currency;
             document.querySelectorAll('.currency-cny-btn, .currency-usdt-btn').forEach(btn => {
                 btn.style.opacity = btn.className.includes(currency.toLowerCase()) ? '1' : '0.6';
@@ -372,7 +367,6 @@
         }
 
         async function addRecord(isIncome) {
-            console.log('Adding record, isIncome:', isIncome);
             try {
                 const note = document.getElementById('note').value;
                 const amount = parseFloat(document.getElementById('amount').value);
@@ -386,7 +380,7 @@
                     cnyAmount = amount * usdtRate;
                 }
 
-                const time = new Date().toLocaleDateString('zh-CN');
+                const time = new Date().toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 const record = { time, note, amount: cnyAmount, isIncome, id: Date.now() };
                 records.push(record);
                 saveRecords();
@@ -400,17 +394,14 @@
         }
 
         function saveRecords() {
-            console.log('Saving records:', records);
             localStorage.setItem('records', JSON.stringify(records));
         }
 
         function saveMonthlyRecords() {
-            console.log('Saving monthlyRecords:', monthlyRecords);
             localStorage.setItem('monthlyRecords', JSON.stringify(monthlyRecords));
         }
 
         function editRecord(id) {
-            console.log('Editing record with id:', id);
             try {
                 const record = records.find(r => r.id === id);
                 editId = id;
@@ -423,7 +414,6 @@
         }
 
         function saveEdit() {
-            console.log('Saving edited record, editId:', editId);
             try {
                 const record = records.find(r => r.id === editId);
                 const newNote = document.getElementById('editNote').value;
@@ -440,13 +430,11 @@
         }
 
         function deleteRecord(id) {
-            console.log('Deleting record with id:', id);
             editId = id;
             promptPassword('deleteRecord');
         }
 
         function executeDelete() {
-            console.log('Executing delete, editId:', editId);
             try {
                 records = records.filter(r => r.id !== editId);
                 saveRecords();
@@ -458,13 +446,16 @@
         }
 
         function editMonthly(month) {
-            console.log('Editing monthly record for month:', month);
             try {
                 const record = monthlyRecords.find(r => r.month === month);
+                if (!record) {
+                    alert('未找到该月账单');
+                    return;
+                }
                 editMonth = month;
                 document.getElementById('editMonth').value = month;
-                document.getElementById('editMonthlyIncome').value = record.income;
-                document.getElementById('editMonthlyExpense').value = record.expense;
+                document.getElementById('editMonthlyIncome').value = record.income || 0;
+                document.getElementById('editMonthlyExpense').value = record.expense || 0;
                 document.getElementById('editMonthlyModal').style.display = 'block';
             } catch (error) {
                 console.error('Error in editMonthly:', error);
@@ -472,9 +463,9 @@
         }
 
         function saveMonthlyEdit() {
-            console.log('Saving edited monthly record, editMonth:', editMonth);
             try {
                 const record = monthlyRecords.find(r => r.month === editMonth);
+                if (!record) return;
                 const newIncome = parseFloat(document.getElementById('editMonthlyIncome').value);
                 const newExpense = parseFloat(document.getElementById('editMonthlyExpense').value);
                 if (!isNaN(newIncome)) record.income = newIncome;
@@ -489,13 +480,11 @@
         }
 
         function deleteMonthly(month) {
-            console.log('Deleting monthly record for month:', month);
             editMonth = month;
             promptPassword('deleteMonthly');
         }
 
         function executeDeleteMonthly() {
-            console.log('Executing delete monthly, editMonth:', editMonth);
             try {
                 monthlyRecords = monthlyRecords.filter(r => r.month !== editMonth);
                 saveMonthlyRecords();
@@ -507,7 +496,6 @@
         }
 
         function editMotto() {
-            console.log('Editing motto');
             try {
                 document.getElementById('mottoText').value = motto;
                 tempMotto = motto;
@@ -518,7 +506,6 @@
         }
 
         function saveMotto() {
-            console.log('Saving motto');
             try {
                 motto = tempMotto;
                 localStorage.setItem('motto', motto);
@@ -531,7 +518,6 @@
         }
 
         function updateMottoDisplay() {
-            console.log('Updating motto display');
             try {
                 const mottoElement = document.getElementById('motto');
                 mottoElement.textContent = motto;
@@ -543,7 +529,6 @@
         }
 
         function promptPassword(action) {
-            console.log('Prompting password for action:', action);
             try {
                 if (action === 'saveMotto') {
                     tempMotto = document.getElementById('mottoText').value;
@@ -557,7 +542,6 @@
         }
 
         function confirmPassword() {
-            console.log('Confirming password, pendingAction:', pendingAction);
             try {
                 const password = document.getElementById('passwordInput').value;
                 if (password !== DEFAULT_PASSWORD) {
@@ -586,7 +570,6 @@
         }
 
         function closeModal(modalId) {
-            console.log('Closing modal:', modalId);
             try {
                 document.getElementById(modalId).style.display = 'none';
                 if (modalId === 'passwordModal') {
@@ -599,7 +582,6 @@
         }
 
         function updateTables() {
-            console.log('Updating tables, records:', records);
             try {
                 const incomeTable = document.getElementById('incomeTable');
                 const expenseTable = document.getElementById('expenseTable');
@@ -643,7 +625,6 @@
         }
 
         function updateMonthlyTable() {
-            console.log('Updating monthly table, monthlyRecords:', monthlyRecords);
             try {
                 const monthlyTable = document.getElementById('monthlyTable');
                 while (monthlyTable.rows.length > 1) monthlyTable.deleteRow(1);
@@ -652,9 +633,9 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${record.month}</td>
-                        <td>¥${record.income.toFixed(2)}</td>
-                        <td>¥${record.expense.toFixed(2)}</td>
-                        <td>¥${(record.income - record.expense).toFixed(2)}</td>
+                        <td>¥${(record.income || 0).toFixed(2)}</td>
+                        <td>¥${(record.expense || 0).toFixed(2)}</td>
+                        <td>¥${((record.income || 0) - (record.expense || 0)).toFixed(2)}</td>
                         <td>
                             <button class="edit-btn" onclick="editMonthly('${record.month}')">修改</button>
                             <button class="delete-btn" onclick="deleteMonthly('${record.month}')">删除</button>
@@ -671,37 +652,31 @@
         }
 
         function clearLastMonthRecords() {
-            console.log('Clearing last month records');
             try {
                 if (records.length === 0) {
                     alert('没有记录可清除');
                     return;
                 }
 
-                // 提取所有记录的月份
-                const months = [...new Set(records.map(r => r.time.slice(0, 7).replace('/', '-')))]; // 转换为 "YYYY-MM"
+                const months = [...new Set(records.map(r => r.time.slice(0, 7).replace('/', '-')))];
                 if (months.length === 0) {
                     alert('没有记录可清除');
                     return;
                 }
 
-                // 按时间排序，找到最新月份和第二新月份（上个月）
                 months.sort((a, b) => new Date(b) - new Date(a));
                 if (months.length < 2) {
                     alert('记录中只有一个月份，无法清除上个月');
                     return;
                 }
 
-                const lastMonthStr = months[1]; // 第二新月份，例如 "2025-02"
-
-                // 筛选上个月的记录
+                const lastMonthStr = months[1];
                 const lastMonthRecords = records.filter(r => r.time.slice(0, 7).replace('/', '-') === lastMonthStr);
                 if (lastMonthRecords.length === 0) {
                     alert(`没有 ${lastMonthStr} 的记录可清除`);
                     return;
                 }
 
-                // 计算收入和支出
                 let totalIncome = 0;
                 let totalExpense = 0;
                 lastMonthRecords.forEach(record => {
@@ -709,7 +684,6 @@
                     else totalExpense += record.amount;
                 });
 
-                // 更新月账单
                 const existingMonth = monthlyRecords.find(r => r.month === lastMonthStr);
                 if (existingMonth) {
                     existingMonth.income = totalIncome;
@@ -719,7 +693,6 @@
                     monthlyRecords.push({ month: lastMonthStr, income: totalIncome, expense: totalExpense, details: lastMonthRecords });
                 }
 
-                // 从 records 中移除上个月记录
                 records = records.filter(r => r.time.slice(0, 7).replace('/', '-') !== lastMonthStr);
                 saveRecords();
                 saveMonthlyRecords();
@@ -732,13 +705,12 @@
         }
 
         function showMonthlyDetails(month) {
-            console.log('Showing monthly details for month:', month);
             try {
                 const record = monthlyRecords.find(r => r.month === month);
                 const detailDiv = document.getElementById('detailRecords');
                 detailDiv.innerHTML = '';
 
-                if (record.details && record.details.length > 0) {
+                if (record && record.details && record.details.length > 0) {
                     const incomeTable = document.createElement('table');
                     incomeTable.className = 'income-table';
                     incomeTable.innerHTML = '<tr><th>时间</th><th>备注</th><th>人民币</th></tr>';
@@ -750,8 +722,8 @@
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${detail.time}</td>
-                            <td>${detail.note}</td>
-                            <td>¥${detail.amount.toFixed(2)}</td>
+                            <td>${detail.note || '无备注'}</td>
+                            <td>¥${(detail.amount || 0).toFixed(2)}</td>
                         `;
                         if (detail.isIncome) {
                             incomeTable.appendChild(row);
@@ -775,7 +747,6 @@
         }
 
         function clearMonthlyRecords() {
-            console.log('Clearing monthly records');
             try {
                 monthlyRecords = [];
                 saveMonthlyRecords();
@@ -787,20 +758,7 @@
             }
         }
 
-        async function translateToThai(text) {
-            console.log('Translating to Thai:', text);
-            try {
-                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh|th`);
-                const data = await response.json();
-                return data.responseData.translatedText || text;
-            } catch (error) {
-                console.error('翻译失败，使用默认值', error);
-                return text;
-            }
-        }
-
-        async function generateBill(lang) {
-            console.log('Generating bill, lang:', lang);
+        function generateBill() {
             try {
                 document.getElementById('loading').style.display = 'block';
                 
@@ -824,190 +782,91 @@
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-                if (lang === 'zh') {
-                    ctx.fillStyle = '#333';
-                    ctx.font = `bold ${headerFontSize}px Arial`;
-                    ctx.textAlign = 'center';
-                    ctx.fillText('生活开支记账', canvasWidth / 2, headerHeight / 3);
-                    ctx.font = `${baseFontSize}px Arial`;
-                    ctx.fillText(`生成日期: ${now.toLocaleDateString('zh-CN')}`, canvasWidth / 2, headerHeight * 2 / 3);
+                ctx.fillStyle = '#333';
+                ctx.font = `bold ${headerFontSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('生活开支记账', canvasWidth / 2, headerHeight / 3);
+                ctx.font = `${baseFontSize}px Arial`;
+                ctx.fillText(`生成日期: ${now.toLocaleDateString('zh-CN')}`, canvasWidth / 2, headerHeight * 2 / 3);
 
-                    const incomeHeaderY = headerHeight;
+                const incomeHeaderY = headerHeight;
+                ctx.fillStyle = '#e6f0e6';
+                ctx.fillRect(0, incomeHeaderY, canvasWidth, rowHeight);
+                ctx.fillStyle = '#000';
+                ctx.font = `bold ${baseFontSize}px Arial`;
+                const incomeHeaders = ['时间', '备注', '人民币'];
+                incomeHeaders.forEach((header, i) => {
+                    const x = i * (canvasWidth / 3);
+                    ctx.fillText(header, x + (canvasWidth / 6), incomeHeaderY + rowHeight / 2);
+                });
+
+                let y = incomeHeaderY + rowHeight;
+                const incomeRecords = filteredRecords.filter(r => r.isIncome);
+                incomeRecords.forEach(record => {
                     ctx.fillStyle = '#e6f0e6';
-                    ctx.fillRect(0, incomeHeaderY, canvasWidth, rowHeight);
+                    ctx.fillRect(0, y, canvasWidth, rowHeight);
                     ctx.fillStyle = '#000';
-                    ctx.font = `bold ${baseFontSize}px Arial`;
-                    const incomeHeaders = ['时间', '备注', '人民币'];
-                    incomeHeaders.forEach((header, i) => {
+                    ctx.font = `${baseFontSize}px Arial`;
+                    const cols = [record.time, record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
+                    cols.forEach((col, i) => {
                         const x = i * (canvasWidth / 3);
-                        ctx.fillText(header, x + (canvasWidth / 6), incomeHeaderY + rowHeight / 2);
+                        ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
                     });
+                    y += rowHeight;
+                });
 
-                    let y = incomeHeaderY + rowHeight;
-                    const incomeRecords = filteredRecords.filter(r => r.isIncome);
-                    incomeRecords.forEach(record => {
-                        ctx.fillStyle = '#e6f0e6';
-                        ctx.fillRect(0, y, canvasWidth, rowHeight);
-                        ctx.fillStyle = '#000';
-                        ctx.font = `${baseFontSize}px Arial`;
-                        const cols = [record.time, record.note, `¥${record.amount.toFixed(2)}`];
-                        cols.forEach((col, i) => {
-                            const x = i * (canvasWidth / 3);
-                            ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
-                        });
-                        y += rowHeight;
-                    });
+                const expenseHeaderY = y;
+                ctx.fillStyle = '#f0e6e6';
+                ctx.fillRect(0, expenseHeaderY, canvasWidth, rowHeight);
+                ctx.fillStyle = '#000';
+                ctx.font = `bold ${baseFontSize}px Arial`;
+                const expenseHeaders = ['时间', '备注', '人民币'];
+                expenseHeaders.forEach((header, i) => {
+                    const x = i * (canvasWidth / 3);
+                    ctx.fillText(header, x + (canvasWidth / 6), expenseHeaderY + rowHeight / 2);
+                });
 
-                    const expenseHeaderY = y;
+                y = expenseHeaderY + rowHeight;
+                const expenseRecords = filteredRecords.filter(r => !r.isIncome);
+                expenseRecords.forEach(record => {
                     ctx.fillStyle = '#f0e6e6';
-                    ctx.fillRect(0, expenseHeaderY, canvasWidth, rowHeight);
+                    ctx.fillRect(0, y, canvasWidth, rowHeight);
                     ctx.fillStyle = '#000';
-                    ctx.font = `bold ${baseFontSize}px Arial`;
-                    const expenseHeaders = ['时间', '备注', '人民币'];
-                    expenseHeaders.forEach((header, i) => {
+                    ctx.font = `${baseFontSize}px Arial`;
+                    const cols = [record.time, record.note || '无备注', `¥${(record.amount || 0).toFixed(2)}`];
+                    cols.forEach((col, i) => {
                         const x = i * (canvasWidth / 3);
-                        ctx.fillText(header, x + (canvasWidth / 6), expenseHeaderY + rowHeight / 2);
+                        ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
                     });
+                    y += rowHeight;
+                });
 
-                    y = expenseHeaderY + rowHeight;
-                    const expenseRecords = filteredRecords.filter(r => !r.isIncome);
-                    expenseRecords.forEach(record => {
-                        ctx.fillStyle = '#f0e6e6';
-                        ctx.fillRect(0, y, canvasWidth, rowHeight);
-                        ctx.fillStyle = '#000';
+                const summaryY = y;
+                ctx.fillStyle = '#f9f9f9';
+                ctx.fillRect(0, summaryY, canvasWidth, rowHeight * 3);
+                ctx.fillStyle = '#000';
+                ctx.font = `bold ${baseFontSize}px Arial`;
+                const totalIncome = incomeRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const totalExpense = expenseRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+                const summary = [
+                    '本月总结',
+                    `总收入: ¥${totalIncome.toFixed(2)}`,
+                    `总支出: ¥${totalExpense.toFixed(2)}`,
+                    `净收入: ¥${(totalIncome - totalExpense).toFixed(2)}`
+                ];
+                summary.forEach((line, i) => {
+                    if (i === 0) {
+                        ctx.font = `bold ${baseFontSize * 1.2}px Arial`;
+                        ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight / 2);
+                    } else {
                         ctx.font = `${baseFontSize}px Arial`;
-                        const cols = [record.time, record.note, `¥${record.amount.toFixed(2)}`];
-                        cols.forEach((col, i) => {
-                            const x = i * (canvasWidth / 3);
-                            ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
-                        });
-                        y += rowHeight;
-                    });
+                        ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight * (i + 1) - rowHeight / 2);
+                    }
+                });
 
-                    const summaryY = y;
-                    ctx.fillStyle = '#f9f9f9';
-                    ctx.fillRect(0, summaryY, canvasWidth, rowHeight * 3);
-                    ctx.fillStyle = '#000';
-                    ctx.font = `bold ${baseFontSize}px Arial`;
-                    const totalIncome = incomeRecords.reduce((sum, r) => sum + r.amount, 0);
-                    const totalExpense = expenseRecords.reduce((sum, r) => sum + r.amount, 0);
-                    const summary = [
-                        '本月总结',
-                        `总收入: ¥${totalIncome.toFixed(2)}`,
-                        `总支出: ¥${totalExpense.toFixed(2)}`,
-                        `净收入: ¥${(totalIncome - totalExpense).toFixed(2)}`
-                    ];
-                    summary.forEach((line, i) => {
-                        if (i === 0) {
-                            ctx.font = `bold ${baseFontSize * 1.2}px Arial`;
-                            ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight / 2);
-                        } else {
-                            ctx.font = `${baseFontSize}px Arial`;
-                            ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight * (i + 1) - rowHeight / 2);
-                        }
-                    });
-
-                    const newWindow = window.open('', '_blank');
-                    newWindow.document.write('<img src="' + canvas.toDataURL('image/png') + '" style="max-width: 100%; height: auto;">');
-                    newWindow.document.close();
-                } else {
-                    (async () => {
-                        const title = await translateToThai('生活开支记账');
-                        const dateLabel = await translateToThai('生成日期');
-                        const incomeHeader = await Promise.all(['时间', '备注', '人民币'].map(t => translateToThai(t)));
-                        const expenseHeader = incomeHeader;
-                        const summaryTitle = await translateToThai('本月总结');
-                        const totalIncomeLabel = await translateToThai('总收入');
-                        const totalExpenseLabel = await translateToThai('总支出');
-                        const netIncomeLabel = await translateToThai('净收入');
-
-                        ctx.fillStyle = '#333';
-                        ctx.font = `bold ${headerFontSize}px 'Noto Sans Thai', Arial`;
-                        ctx.textAlign = 'center';
-                        ctx.fillText(title, canvasWidth / 2, headerHeight / 3);
-                        ctx.font = `${baseFontSize}px 'Noto Sans Thai', Arial`;
-                        ctx.fillText(`${dateLabel}: ${now.toLocaleDateString('th-TH')}`, canvasWidth / 2, headerHeight * 2 / 3);
-
-                        const incomeHeaderY = headerHeight;
-                        ctx.fillStyle = '#e6f0e6';
-                        ctx.fillRect(0, incomeHeaderY, canvasWidth, rowHeight);
-                        ctx.fillStyle = '#000';
-                        ctx.font = `bold ${baseFontSize}px 'Noto Sans Thai', Arial`;
-                        incomeHeader.forEach((header, i) => {
-                            const x = i * (canvasWidth / 3);
-                            ctx.fillText(header, x + (canvasWidth / 6), incomeHeaderY + rowHeight / 2);
-                        });
-
-                        let y = incomeHeaderY + rowHeight;
-                        const incomeRecords = filteredRecords.filter(r => r.isIncome);
-                        for (const record of incomeRecords) {
-                            const translatedNote = await translateToThai(record.note);
-                            ctx.fillStyle = '#e6f0e6';
-                            ctx.fillRect(0, y, canvasWidth, rowHeight);
-                            ctx.fillStyle = '#000';
-                            ctx.font = `${baseFontSize}px 'Noto Sans Thai', Arial`;
-                            const cols = [record.time, translatedNote, `¥${record.amount.toFixed(2)}`];
-                            cols.forEach((col, i) => {
-                                const x = i * (canvasWidth / 3);
-                                ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
-                            });
-                            y += rowHeight;
-                        }
-
-                        const expenseHeaderY = y;
-                        ctx.fillStyle = '#f0e6e6';
-                        ctx.fillRect(0, expenseHeaderY, canvasWidth, rowHeight);
-                        ctx.fillStyle = '#000';
-                        ctx.font = `bold ${baseFontSize}px 'Noto Sans Thai', Arial`;
-                        expenseHeader.forEach((header, i) => {
-                            const x = i * (canvasWidth / 3);
-                            ctx.fillText(header, x + (canvasWidth / 6), expenseHeaderY + rowHeight / 2);
-                        });
-
-                        y = expenseHeaderY + rowHeight;
-                        const expenseRecords = filteredRecords.filter(r => !r.isIncome);
-                        for (const record of expenseRecords) {
-                            const translatedNote = await translateToThai(record.note);
-                            ctx.fillStyle = '#f0e6e6';
-                            ctx.fillRect(0, y, canvasWidth, rowHeight);
-                            ctx.fillStyle = '#000';
-                            ctx.font = `${baseFontSize}px 'Noto Sans Thai', Arial`;
-                            const cols = [record.time, translatedNote, `¥${record.amount.toFixed(2)}`];
-                            cols.forEach((col, i) => {
-                                const x = i * (canvasWidth / 3);
-                                ctx.fillText(col, x + (canvasWidth / 6), y + rowHeight / 2);
-                            });
-                            y += rowHeight;
-                        }
-
-                        const summaryY = y;
-                        ctx.fillStyle = '#f9f9f9';
-                        ctx.fillRect(0, summaryY, canvasWidth, rowHeight * 3);
-                        ctx.fillStyle = '#000';
-                        ctx.font = `bold ${baseFontSize}px 'Noto Sans Thai', Arial`;
-                        const totalIncome = incomeRecords.reduce((sum, r) => sum + r.amount, 0);
-                        const totalExpense = expenseRecords.reduce((sum, r) => sum + r.amount, 0);
-                        const summary = [
-                            summaryTitle,
-                            `${totalIncomeLabel}: ¥${totalIncome.toFixed(2)}`,
-                            `${totalExpenseLabel}: ¥${totalExpense.toFixed(2)}`,
-                            `${netIncomeLabel}: ¥${(totalIncome - totalExpense).toFixed(2)}`
-                        ];
-                        summary.forEach((line, i) => {
-                            if (i === 0) {
-                                ctx.font = `bold ${baseFontSize * 1.2}px 'Noto Sans Thai', Arial`;
-                                ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight / 2);
-                            } else {
-                                ctx.font = `${baseFontSize}px 'Noto Sans Thai', Arial`;
-                                ctx.fillText(line, canvasWidth / 2, summaryY + rowHeight * (i + 1) - rowHeight / 2);
-                            }
-                        });
-
-                        const newWindow = window.open('', '_blank');
-                        newWindow.document.write('<img src="' + canvas.toDataURL('image/png') + '" style="max-width: 100%; height: auto;">');
-                        newWindow.document.close();
-                    })();
-                }
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write('<img src="' + canvas.toDataURL('image/png') + '" style="max-width: 100%; height: auto;">');
+                newWindow.document.close();
 
                 setTimeout(() => {
                     document.getElementById('loading').style.display = 'none';
@@ -1019,7 +878,6 @@
         }
 
         function exportToDesktop() {
-            console.log('Exporting to desktop');
             try {
                 const data = { records, monthlyRecords };
                 const jsonString = JSON.stringify(data, null, 2);
@@ -1039,7 +897,6 @@
         }
 
         function importRecords() {
-            console.log('Importing records');
             try {
                 const fileInput = document.getElementById('importFile');
                 const file = fileInput.files[0];
@@ -1057,7 +914,7 @@
                         updateMonthlyTable();
                         alert('记录已成功导入！');
                     } catch (err) {
-                        alert('导入失败：文件格式错误！ W');
+                        alert('导入失败：文件格式错误！');
                     }
                 };
                 reader.readAsText(file);
